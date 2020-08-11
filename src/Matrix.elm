@@ -17,7 +17,7 @@ type alias Matrix =
     }
 
 
-type alias Column =
+type alias Vector =
     Array Float
 
 
@@ -40,7 +40,7 @@ checkArrAll f arr =
     checkListAll f <| Array.toList arr
 
 
-fromArray : Array Column -> Result String Matrix
+fromArray : Array Vector -> Result String Matrix
 fromArray array =
     let
         nrRows =
@@ -127,7 +127,7 @@ identityMat n =
         Err <| "identityMatrix n: n should be >= 0, but is " ++ String.fromInt n ++ "."
 
 
-getCol : Matrix -> Int -> Result String Column
+getCol : Matrix -> Int -> Result String Vector
 getCol mat colNr =
     case Array.get colNr mat.data of
         Just arr ->
@@ -137,7 +137,7 @@ getCol mat colNr =
             Err <| "colNr " ++ String.fromInt colNr ++ " was out of bounds for matrix with " ++ String.fromInt mat.nrCols ++ " cols."
 
 
-transformCol : Matrix -> Int -> (Column -> Result String Column) -> Result String Matrix
+transformCol : Matrix -> Int -> (Vector -> Result String Vector) -> Result String Matrix
 transformCol mat colNr transFun =
     let
         colRes =
@@ -151,7 +151,7 @@ transformCol mat colNr transFun =
         |> nxt updateMatrix
 
 
-updateCol : Matrix -> Int -> Column -> Result String Matrix
+updateCol : Matrix -> Int -> Vector -> Result String Matrix
 updateCol mat colNr newCol =
     let
         updateMatrix =
