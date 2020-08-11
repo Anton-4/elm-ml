@@ -31,6 +31,5 @@ jobs:
           path: ~/.elm
           key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
       - run: npm clean-install
-      - run: npx --no-install elm make --output /dev/null
       - name: elm-test
         run: npx --no-install elm-test
