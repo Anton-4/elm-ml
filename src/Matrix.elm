@@ -8,6 +8,7 @@ import Array exposing (Array)
 import Array.Extra
 import Helper exposing (arrToString, nxt)
 import Maybe.Extra
+import Array exposing (Array)
 
 
 type alias Matrix =
@@ -245,3 +246,22 @@ mul matA matB =
                 matA.data
     in
     fromArray mulArray
+
+
+mulWithVec : Vector -> Matrix -> Result String Vector
+mulWithVec vec mat =
+    let
+        mat1Dim = fromArray <| Array.fromList [vec]
+        matrixProd = 
+            mat1Dim
+            |> nxt (\mat1D -> mul mat1D mat)
+    in
+        case matrixProd of
+            Ok matProd ->
+                let
+                    firsRow = Array.get 0 matProd.data
+                in
+                    case firsRow of
+                        Just row -> Ok row
+                        Nothing -> Err "failed to get first row of matrix with Array.get"
+            Err e -> Err e

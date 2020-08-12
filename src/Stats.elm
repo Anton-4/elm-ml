@@ -11,16 +11,23 @@ mean vec =
         sumArr vec / len
 
 
+squaredMeanDiffsSum : Vector -> Float -> Float
+squaredMeanDiffsSum vec vecMean = 
+    let
+        squaredMeanDiffs = List.map
+            (\x -> (vecMean - x) ^ 2)
+            <| Array.toList vec
+    in
+        sum squaredMeanDiffs
+
+
 std : Vector -> Float
 std vec =
     let
         vecMean = mean vec
         len = toFloat <| Array.length vec
-        squaredMeanDiffs = List.map
-                    (\x -> (vecMean - x) ^ 2)
-                    <| Array.toList vec
 
-        variance = sum squaredMeanDiffs / len
+        variance = squaredMeanDiffsSum vec vecMean / len
     in
         sqrt variance
 

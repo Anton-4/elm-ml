@@ -56,4 +56,4 @@ jobs:
           key: ${{ runner.os }}-elm--home-${{ hashFiles('**/elm.json') }}
       - run: npm clean-install
       - name: elm-format
-        run: npx --no-install elm-format --validate
+        run: npx --no-install elm-format --validate .

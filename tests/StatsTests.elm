@@ -5,6 +5,7 @@ import Expect exposing (FloatingPointTolerance(..), Expectation)
 import Matrix exposing (Vector)
 import Test exposing (Test, describe, test)
 import Stats exposing (mean, std)
+import TestHelpers exposing (floatEqual)
 
 
 
@@ -26,10 +27,6 @@ vec4 : Vector
 vec4 =
     Array.fromList [ 0 ]
 
-
-floatEqual : Float -> Float -> Expectation
-floatEqual a b =
-    Expect.within (Absolute 0.0001) a b
 
 meanTest : Test
 meanTest =
