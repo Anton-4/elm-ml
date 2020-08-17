@@ -3,11 +3,24 @@ module Neural.Net exposing (..)
 import Neural.Layers exposing (Layer, forwardLayer)
 import Matrix exposing (Vector, Matrix)
 import Array
-import Neural.Layers exposing (forwardLayer, layerToStr)
-import Neural.Layers exposing (Layer)
+import Neural.Layers exposing (Layer, LayerConf, forwardLayer, layerToStr, genLayers)
+import Random
+import Result.Extra exposing (combine)
 
 type alias  NeuralNet =
     List Layer
+
+
+type alias  NetConf =
+    List LayerConf
+
+
+initNet : Random.Seed -> NetConf -> Result String NeuralNet
+initNet seed netConf =
+    let
+        layers = genLayers seed netConf
+    in
+        combine layers
 
 
 forward : NeuralNet -> Vector -> Result String (List (Result String Layer))
@@ -21,6 +34,7 @@ forward net inputVec =
             in
                 case calcedLayerRes of
                     Ok calcedLayer ->
+
                         case layers of
                             [] -> Ok [Ok calcedLayer]
                             _ ->
@@ -32,6 +46,7 @@ forward net inputVec =
                                             Ok ( Ok calcedLayer :: otherLayers)
                                         Err e ->
                                             Err e
+                                            
                     Err e ->
                         Err <| "forward: layer " ++ layerToStr layer ++ "; " ++ e
 

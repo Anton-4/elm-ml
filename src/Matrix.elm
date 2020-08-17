@@ -9,7 +9,7 @@ import Array.Extra
 import Helper exposing (arrToString, nxt)
 import Maybe.Extra
 import Array exposing (Array)
-
+import Random exposing (Generator)
 
 type alias Matrix =
     { data : Array (Array Float)
@@ -126,6 +126,23 @@ identityMat n =
 
     else
         Err <| "identityMatrix n: n should be >= 0, but is " ++ String.fromInt n ++ "."
+
+
+-- randMatrix : Int -> Int -> Generator Float -> Result String (Generator Matrix)
+-- randMatrix nrRows nrCols foatGen =
+--     let
+--         rows = List.repeat nrRows []
+--         mat = List.map (\_ -> )
+--     in
+--         Random.list nrCols floatGen
+
+
+randMatrix : Int -> Int -> Generator Float -> Generator (Result String Matrix)
+randMatrix nrRows nrCols floatGen =
+    let
+        list2DGen = Random.list nrRows (Random.list nrCols floatGen)
+    in
+        Random.map (\lst -> fromList lst) list2DGen
 
 
 getCol : Matrix -> Int -> Result String Vector

@@ -3,7 +3,7 @@ module DataFrame exposing (DataFrame, getCol, indexOfCol, newDF, transformCol, u
 import Helper exposing (nxt)
 import List
 import List.Extra exposing (elemIndex)
-import Matrix exposing (Column, Matrix)
+import Matrix exposing (Vector, Matrix)
 
 
 type alias DataFrame =
@@ -36,7 +36,7 @@ indexOfCol df colName =
     indexOf colName df.header
 
 
-getCol : DataFrame -> String -> Result String Column
+getCol : DataFrame -> String -> Result String Vector
 getCol df colName =
     let
         colFun =
@@ -46,7 +46,7 @@ getCol df colName =
         |> nxt colFun
 
 
-updateCol : DataFrame -> String -> Column -> Result String DataFrame
+updateCol : DataFrame -> String -> Vector -> Result String DataFrame
 updateCol df colName newCol =
     let
         colIndexRes =
@@ -67,7 +67,7 @@ updateCol df colName newCol =
         |> nxt insertMatrixIntoDFFun
 
 
-transformCol : DataFrame -> String -> (Column -> Result String Column) -> Result String DataFrame
+transformCol : DataFrame -> String -> (Vector -> Result String Vector) -> Result String DataFrame
 transformCol df colName transFun =
     let
         colIndexRes =

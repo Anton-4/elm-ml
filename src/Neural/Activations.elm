@@ -2,6 +2,7 @@ module Neural.Activations exposing (..)
 
 type Activation =
     Tanh
+    | Sigmoid
     --Relu
 
 tanh : Float -> Float
@@ -15,6 +16,19 @@ tanhDer x =
         coshSquare = cosh x ^2
     in
         (coshSquare - (sinh x ^2)) / coshSquare
+
+
+sigmoid : Float -> Float
+sigmoid x =
+    1/(1 + e^ -x)
+
+
+sigmoidDer : Float -> Float
+sigmoidDer x =
+    let
+        sigm = sigmoid x
+    in
+        sigm * (1 - sigm)
 
 
 sinh : Float -> Float

@@ -2,14 +2,24 @@ module Neural.Layers exposing (..)
 
 import Matrix exposing (Matrix)
 import Neural.Activations exposing(Activation(..))
-import Matrix exposing (Matrix, Vector)
+import Matrix exposing (Matrix, Vector, randMatrix)
+import Random exposing (Generator)
+import Random.Float exposing (normal)
 import Array
+import Random
 
-type alias Layer =
-    {   layerType : LayerType
+
+
+type alias LayerConf =
+    {
+        layerType : LayerType
         , nrInputNeurons : Int 
         , nrOutputNeurons : Int
         , activation : Activation
+    }
+type alias Layer =
+    {   
+        layerConf : LayerConf
         , weights : Matrix
         , lastForward : Vector
     }
@@ -19,10 +29,52 @@ type LayerType =
     Dense
 
 
-initWeights : Int -> Int -> Result String Matrix
+initWeights : Int -> Int -> Generator (Result String Matrix)
 initWeights nrInput nrOutput =
-    Matrix.fromList [[]]
+    randMatrix nrInput nrOutput (normal 0 0.01)
 
+
+initLayer : LayerConf -> Generator (Result String Layer)
+initLayer layerConf =
+    let
+        weightsGen =
+            initWeights
+                layerConf.nrInputNeurons
+                layerConf.nrOutputNeurons
+    in
+        Random.map
+            (\weightsRes ->
+                case weightsRes of
+                    Ok weights ->
+                        Ok { layerConf = layerConf
+                        , weights = weights
+                        , lastForward = Array.empty }
+                    Err e ->
+                        Err e
+            )
+            weightsGen
+
+
+genLayers : Random.Seed -> List(LayerConf) -> List (Result String Layer)
+genLayers seed layerConfs =
+    case layerConfs of
+        layerConf :: xs ->
+            let
+                (layer, nextSeed) = Random.step (initLayer layerConf) seed
+            in
+                layer ::
+                    genLayers nextSeed xs
+
+        [] -> []
+
+dense : Int -> Int -> Activation -> LayerConf
+dense nrInputNeurons nrOutputNeurons activation =
+    {
+        layerType = Dense
+        , nrInputNeurons = nrInputNeurons
+        , nrOutputNeurons = nrOutputNeurons
+        , activation = activation
+    }
 
 forwardLayer : Layer -> Vector -> Result String Layer
 forwardLayer layer inputVec =
@@ -40,11 +92,14 @@ forwardLayer layer inputVec =
 
 layerToStr : Layer -> String
 layerToStr layer =
-    "Layer: " ++
-    layerTypeToStr layer.layerType ++ " in: " ++
-    String.fromInt layer.nrInputNeurons ++ " out: " ++
-    String.fromInt layer.nrOutputNeurons ++ "actFun: " ++
-    activationToStr layer.activation
+    let
+        layerConf = layer.layerConf
+    in
+        "Layer: " ++
+        layerTypeToStr layerConf.layerType ++ " in: " ++
+        String.fromInt layerConf.nrInputNeurons ++ " out: " ++
+        String.fromInt layerConf.nrOutputNeurons ++ "actFun: " ++
+        activationToStr layerConf.activation
 
 
 layerTypeToStr : LayerType -> String
@@ -57,4 +112,5 @@ activationToStr : Activation -> String
 activationToStr actFun =
     case actFun of
         Tanh -> "Tanh"
+        Sigmoid -> "Sigmoid"
 
