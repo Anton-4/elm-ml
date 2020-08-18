@@ -10,4 +10,4 @@ floatEqual a b =
 
 floatEqualPrecise : Float -> Float -> Expectation
 floatEqualPrecise a b =
-    Expect.within (Absolute 0.0000000001) a b
+    Expect.within (Absolute 0.000000001) a b

@@ -83,7 +83,7 @@ forwardLayer : Layer -> Vector -> Result String Layer
 forwardLayer layer inputVec =
     let
         forwardMul =
-            Matrix.mulWithVec inputVec layer.weights
+            Matrix.mulVecWithMat inputVec layer.weights
     in
     case forwardMul of
         Ok vec ->

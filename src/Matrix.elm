@@ -87,6 +87,17 @@ fromList list =
         |> fromArray
 
 
+
+columnMatFromVec : Vector -> Matrix
+columnMatFromVec vec =
+    let
+        list2D = 
+            Array.toList vec
+            |> List.map (\elt -> [elt])
+    in
+        { data = Array.fromList <| List.map Array.fromList list2D, nrRows = Array.length vec, nrCols = 1}
+
+
 emptyMat : Matrix
 emptyMat =
     { data = Array.fromList [ Array.empty ]
@@ -202,6 +213,11 @@ map fun matrix =
     { matrix | data = Array.map (\row -> Array.map fun row) matrix.data }
 
 
+to2DList : Matrix -> List (List Float)
+to2DList mat =
+    Array.toList <| Array.map Array.toList mat.data
+
+
 transpose : Matrix -> Matrix
 transpose matrix =
     case matrix.nrCols of
@@ -231,7 +247,7 @@ transpose matrix =
                             []
 
                 dataLists =
-                    Array.toList <| Array.map Array.toList matrix.data
+                    to2DList matrix
 
                 transposedList =
                     zip2D dataLists
@@ -267,8 +283,8 @@ mul matA matB =
     fromArray mulArray
 
 
-mulWithVec : Vector -> Matrix -> Result String Vector
-mulWithVec vec mat =
+mulVecWithMat : Vector -> Matrix -> Result String Vector
+mulVecWithMat vec mat =
     let
         mat1Dim =
             fromArray <| Array.fromList [ vec ]
@@ -292,3 +308,138 @@ mulWithVec vec mat =
 
         Err e ->
             Err e
+
+
+mulMatWithVec : Matrix -> Vector -> Result String Vector
+mulMatWithVec mat vec =
+    let
+        mat1Dim =
+            fromArray <| Array.fromList [ vec ]
+
+        matrixProd =
+            mat1Dim
+                |> nxt (\mat1D -> mul mat1D mat)
+    in
+    case matrixProd of
+        Ok matProd ->
+            let
+                firsRow =
+                    Array.get 0 matProd.data
+            in
+            case firsRow of
+                Just row ->
+                    Ok row
+
+                Nothing ->
+                    Err "failed to get first row of matrix with Array.get"
+
+        Err e ->
+            Err e
+
+
+map2 : (Float -> Float -> Float) -> Matrix -> Matrix -> Result String Matrix
+map2 fun matA matB =
+    let
+        flatMatA = flatten matA
+        flatMatB = flatten matB
+
+        equalDims = List.length flatMatA == List.length flatMatB
+    in
+        if equalDims then
+            let
+                afterFunList = List.map2 fun flatMatA flatMatB
+                resultMat = unflatten matA.nrRows matA.nrCols afterFunList
+            in
+                resultMat
+
+        else
+            Err <|
+                "map2: matrices did not have the same dimensions: " ++
+                dims matA ++ " and " ++
+                dims matB
+
+
+flatten : Matrix -> List Float
+flatten mat =
+    to2DList mat
+    |> flattenHelper
+
+
+flattenHelper : List (List Float) -> List Float
+flattenHelper list2D =
+    case list2D of
+        [] -> []
+        x :: xs ->
+            x ++ flattenHelper xs
+
+
+unflatten : Int -> Int -> List Float -> Result String Matrix
+unflatten nrRows nrCols list =
+    let
+        list2D = unflattenHelper nrRows list
+        matRes = fromList list2D
+    in
+        case matRes of
+            Ok mat -> 
+                if mat.nrRows == nrRows && mat.nrCols == nrCols then
+                    Ok mat
+                else
+                    Err <|
+                        "unflatten: list argument did not generate matrix with dims " ++
+                        String.fromInt nrRows ++ "x" ++ String.fromInt nrCols ++ " " ++
+                        ", got " ++ dims mat
+            Err e ->
+                Err e
+        
+
+unflattenHelper : Int -> List Float -> List (List Float)
+unflattenHelper nrCols list =
+    case list of
+        [] -> []
+
+        _ -> 
+            let
+                (beforeList, afterList) = split nrCols list
+            in
+                beforeList :: unflattenHelper nrCols afterList
+
+
+
+split : Int -> List a -> (List a, List a)
+split splitIndex list =
+    splitHelper splitIndex 0 [] list
+    
+
+splitHelper : Int -> Int -> List a -> List a -> (List a, List a)
+splitHelper splitIndex currentIndex listBefore listAfter =
+    if splitIndex == currentIndex then
+        (listBefore, listAfter)
+    else
+        case listAfter of
+            [] -> (listBefore, [])
+            x :: xs -> 
+                splitHelper
+                    splitIndex
+                    (currentIndex + 1 )
+                    (listBefore ++ [x])
+                    xs
+            
+
+dims : Matrix -> String
+dims mat =
+    let
+        rowStr = String.fromInt mat.nrRows
+        colStr = String.fromInt mat.nrCols
+    in
+        rowStr ++ "x" ++ colStr
+
+
+min : Matrix -> Matrix -> Result String Matrix
+min matA matB =
+    map2 (-) matA matB
+
+
+plus : Matrix -> Matrix -> Result String Matrix
+plus matA matB =
+    map2 (+) matA matB
+

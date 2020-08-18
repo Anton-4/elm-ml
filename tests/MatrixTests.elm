@@ -3,7 +3,7 @@ module MatrixTests exposing (create, multiplication, transpose)
 import Array exposing (Array)
 import Expect exposing (Expectation)
 import List
-import Matrix exposing (fromList, identityMat, mul)
+import Matrix exposing (fromList, identityMat, mul, mulMatWithVec, mulVecWithMat)
 import Test exposing (Test, describe, test)
 
 
@@ -50,6 +50,20 @@ matrixList5 =
 
 matrixList5Transpose =
     [ [ 0 ], [ 1 ], [ 2 ] ]
+
+vecList1 : List Float
+vecList1 =
+    [ 0, 0, 0 ]
+
+
+vecList2 : List Float
+vecList2 =
+    [ 1, 2, 3 ]
+
+
+vecList3 : List Float
+vecList3 =
+    [ -2, 2, -3 ]
 
 
 toArr : List (List Float) -> Array (Array Float)
@@ -178,6 +192,53 @@ multiplyExpect matListA matListB matListC =
             Expect.fail "failed to construct matrix from List"
 
 
+multiplyMatWithVecExpect : List (List Float) -> (List Float) -> (List Float) -> Expectation
+multiplyMatWithVecExpect matList vecList vecListProduct =
+    let
+        matARes =
+            Matrix.fromList matList
+    in
+    case matARes of
+        Ok mat ->
+            let
+                productVec =
+                    mulMatWithVec
+                        mat
+                        (Array.fromList vecList)
+
+            in
+            Expect.equal
+                productVec
+                <| Ok (Array.fromList vecListProduct)
+
+        _ ->
+            Expect.fail "failed to construct matrix from List"
+
+
+multiplyVecWithMatExpect : (List Float) -> List (List Float) -> (List Float) -> Expectation
+multiplyVecWithMatExpect vecList matList vecListProduct =
+    let
+        matARes =
+            Matrix.fromList matList
+    in
+    case matARes of
+        Ok mat ->
+            let
+                productVec =
+                    mulVecWithMat
+                        (Array.fromList vecList)
+                        mat
+                        
+
+            in
+            Expect.equal
+                productVec
+                <| Ok (Array.fromList vecListProduct)
+
+        _ ->
+            Expect.fail "failed to construct matrix from List"
+
+
 multiplication : Test
 multiplication =
     describe "multiplication"
@@ -187,4 +248,8 @@ multiplication =
             \_ -> multiplyExpect matrixList2 matrixList3 matList23Prod
         , test "1x3 * 3x1 matrix" <|
             \_ -> multiplyExpect matrixList5 matrixList5Transpose [ [ 5 ] ]
+        , test "1x3 vec * 3x3 matrix" <|
+            \_ -> multiplyVecWithMatExpect vecList1 matrixList1 [0, 0, 0]
+        , test "1x3 vec * 3x1 matrix" <|
+            \_ -> multiplyVecWithMatExpect vecList1 matrixList1 [0] 
         ]
