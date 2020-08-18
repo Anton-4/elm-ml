@@ -8,8 +8,8 @@ import Array exposing (Array)
 import Array.Extra
 import Helper exposing (arrToString, nxt)
 import Maybe.Extra
-import Array exposing (Array)
 import Random exposing (Generator)
+
 
 type alias Matrix =
     { data : Array (Array Float)
@@ -128,6 +128,7 @@ identityMat n =
         Err <| "identityMatrix n: n should be >= 0, but is " ++ String.fromInt n ++ "."
 
 
+
 -- randMatrix : Int -> Int -> Generator Float -> Result String (Generator Matrix)
 -- randMatrix nrRows nrCols foatGen =
 --     let
@@ -140,9 +141,10 @@ identityMat n =
 randMatrix : Int -> Int -> Generator Float -> Generator (Result String Matrix)
 randMatrix nrRows nrCols floatGen =
     let
-        list2DGen = Random.list nrRows (Random.list nrCols floatGen)
+        list2DGen =
+            Random.list nrRows (Random.list nrCols floatGen)
     in
-        Random.map (\lst -> fromList lst) list2DGen
+    Random.map (\lst -> fromList lst) list2DGen
 
 
 getCol : Matrix -> Int -> Result String Vector
@@ -268,17 +270,25 @@ mul matA matB =
 mulWithVec : Vector -> Matrix -> Result String Vector
 mulWithVec vec mat =
     let
-        mat1Dim = fromArray <| Array.fromList [vec]
-        matrixProd = 
+        mat1Dim =
+            fromArray <| Array.fromList [ vec ]
+
+        matrixProd =
             mat1Dim
-            |> nxt (\mat1D -> mul mat1D mat)
+                |> nxt (\mat1D -> mul mat1D mat)
     in
-        case matrixProd of
-            Ok matProd ->
-                let
-                    firsRow = Array.get 0 matProd.data
-                in
-                    case firsRow of
-                        Just row -> Ok row
-                        Nothing -> Err "failed to get first row of matrix with Array.get"
-            Err e -> Err e
+    case matrixProd of
+        Ok matProd ->
+            let
+                firsRow =
+                    Array.get 0 matProd.data
+            in
+            case firsRow of
+                Just row ->
+                    Ok row
+
+                Nothing ->
+                    Err "failed to get first row of matrix with Array.get"
+
+        Err e ->
+            Err e

@@ -3,7 +3,7 @@ module DataFrame exposing (DataFrame, getCol, indexOfCol, newDF, transformCol, u
 import Helper exposing (nxt)
 import List
 import List.Extra exposing (elemIndex)
-import Matrix exposing (Vector, Matrix)
+import Matrix exposing (Matrix, Vector)
 
 
 type alias DataFrame =

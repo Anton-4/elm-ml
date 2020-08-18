@@ -1,35 +1,43 @@
 module Stats exposing (..)
 
-import Matrix exposing (Vector)
 import Array
+import Matrix exposing (Vector)
+
 
 mean : Vector -> Float
 mean vec =
     let
-        len = toFloat <| Array.length vec
+        len =
+            toFloat <| Array.length vec
     in
-        sumArr vec / len
+    sumArr vec / len
 
 
 squaredMeanDiffsSum : Vector -> Float -> Float
-squaredMeanDiffsSum vec vecMean = 
+squaredMeanDiffsSum vec vecMean =
     let
-        squaredMeanDiffs = List.map
-            (\x -> (vecMean - x) ^ 2)
-            <| Array.toList vec
+        squaredMeanDiffs =
+            List.map
+                (\x -> (vecMean - x) ^ 2)
+            <|
+                Array.toList vec
     in
-        sum squaredMeanDiffs
+    sum squaredMeanDiffs
 
 
 std : Vector -> Float
 std vec =
     let
-        vecMean = mean vec
-        len = toFloat <| Array.length vec
+        vecMean =
+            mean vec
 
-        variance = squaredMeanDiffsSum vec vecMean / len
+        len =
+            toFloat <| Array.length vec
+
+        variance =
+            squaredMeanDiffsSum vec vecMean / len
     in
-        sqrt variance
+    sqrt variance
 
 
 sumArr : Vector -> Float

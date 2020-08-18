@@ -1,24 +1,27 @@
-module NeuralTests exposing (neuralNetInit)
+module NeuralTests exposing (denseNetTrain, neuralNetInit)
 
-import Expect
-import Test exposing (Test, describe, test)
-import Neural.Net exposing (NeuralNet, initNet)
-import Neural.Layers exposing (LayerType(..), dense)
-import Neural.Activations exposing (Activation(..))
-import Random
 import Array
+import Expect
+import List.Extra exposing (last)
+import Neural.Activations exposing (Activation(..))
+import Neural.Layers exposing (LayerType(..), dense)
+import Neural.Net exposing (NeuralNet, initNet)
+import Random
+import Test exposing (Test, describe, test)
+import TestHelpers exposing (floatEqualPrecise)
+
 
 seed0 : Random.Seed
 seed0 =
-  Random.initialSeed 42
+    Random.initialSeed 42
 
 
 denseNet1Res : Result String NeuralNet
 denseNet1Res =
-    initNet seed0 [
-        dense 2 4 Sigmoid
+    initNet seed0
+        [ dense 2 4 Sigmoid
         , dense 4 1 Sigmoid
-    ]
+        ]
 
 
 neuralNetInit : Test
@@ -32,14 +35,40 @@ neuralNetInit =
 denseNetTrain : Test
 denseNetTrain =
     let
-        denseNet1 =  case denseNet1Res of
-            Ok nn -> nn
-            Err e -> []
-    in 
-        describe "dense net training"
-            [ test "single forward pass" <|
-                \_ -> Expect.equal 
-                        Neural.Net.forward denseNet1 (Array.fromList [0.1, -0.1])
-            ]
+        denseNet1 =
+            case denseNet1Res of
+                Ok nn ->
+                    nn
 
+                Err e ->
+                    []
+    in
+    describe "dense net training"
+        [ test "single forward pass" <|
+            \_ ->
+                let
+                    forwardNNRes =
+                        Neural.Net.forward denseNet1 (Array.fromList [ 0.1, -0.1 ])
+                in
+                case forwardNNRes of
+                    Ok forwardNN ->
+                        case last forwardNN of
+                            Just layerRes ->
+                                case layerRes of
+                                    Ok layer ->
+                                        case Array.get 0 layer.lastForward of
+                                            Just output ->
+                                                floatEqualPrecise output 0.5008823684026859
 
+                                            Nothing ->
+                                                Expect.fail "failed to get first element of last layer lastForward"
+
+                                    Err e ->
+                                        Expect.fail e
+
+                            Nothing ->
+                                Expect.fail "failed to get last element of forwardNN layer list"
+
+                    Err e ->
+                        Expect.fail e
+        ]
