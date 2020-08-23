@@ -2,7 +2,9 @@ module NeuralTests exposing (denseNetTrain, neuralNetInit)
 
 import Array
 import Expect exposing (Expectation)
+import Helper exposing (nxt)
 import List.Extra exposing (last)
+import Matrix
 import Neural.Activations exposing (Activation(..))
 import Neural.Layers exposing (LayerType(..), dense)
 import Neural.Net exposing (NeuralNet, initNet)
@@ -46,29 +48,34 @@ testForwardPass netRes expectedOutput =
         Ok nn ->
             let
                 forwardNNRes =
-                    Neural.Net.forward nn (Array.fromList [ 0.1, -0.1 ])
+                    Matrix.fromList [ [ 0.1, -0.1 ] ]
+                        |> nxt (Neural.Net.forward nn)
             in
-                case forwardNNRes of
-                    Ok forwardNN ->
-                        case last forwardNN of
-                            Just layerRes ->
-                                case layerRes of
-                                    Ok layer ->
-                                        case Array.get 0 layer.lastForward of
-                                            Just output ->
-                                                floatEqualPrecise output expectedOutput
+            case forwardNNRes of
+                Ok forwardNN ->
+                    case last forwardNN of
+                        Just layerRes ->
+                            case layerRes of
+                                Ok layer ->
+                                    let
+                                        calcedOutputMaybe =
+                                            Matrix.get 0 0 layer.lastOutput
+                                    in
+                                    case calcedOutputMaybe of
+                                        Just output ->
+                                            floatEqualPrecise output expectedOutput
 
-                                            Nothing ->
-                                                Expect.fail "failed to get first element of last layer lastForward"
+                                        Nothing ->
+                                            Expect.fail "failed to get first element of last layer lastOutput"
 
-                                    Err e ->
-                                        Expect.fail e
+                                Err e ->
+                                    Expect.fail e
 
-                            Nothing ->
-                                Expect.fail "failed to get last element of forwardNN layer list"
+                        Nothing ->
+                            Expect.fail "failed to get last element of forwardNN layer list"
 
-                    Err e ->
-                        Expect.fail e
+                Err e ->
+                    Expect.fail e
 
         Err e ->
             Expect.fail e
@@ -80,7 +87,7 @@ denseNetTrain =
         [ test "single forward pass sigmoid denseNet1Res" <|
             \_ ->
                 testForwardPass denseNet1Res 0.5008823684026859
-          , test "single forward pass tanh denseNet2Res" <|
+        , test "single forward pass tanh denseNet2Res" <|
             \_ ->
                 testForwardPass denseNet2Res -0.0000724614666
         ]

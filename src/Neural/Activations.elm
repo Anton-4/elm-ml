@@ -56,3 +56,13 @@ getActFun activation =
 
         Sigmoid ->
             sigmoid
+
+
+getActFunDer : Activation -> (Float -> Float)
+getActFunDer activation =
+    case activation of
+        Tanh ->
+            tanhDer
+
+        Sigmoid ->
+            sigmoidDer

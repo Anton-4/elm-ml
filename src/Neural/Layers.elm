@@ -18,7 +18,8 @@ type alias LayerConf =
 type alias Layer =
     { layerConf : LayerConf
     , weights : Matrix
-    , lastForward : Vector
+    , lastLinearSum : Matrix
+    , lastOutput : Matrix
     }
 
 
@@ -46,7 +47,8 @@ initLayer layerConf =
                     Ok
                         { layerConf = layerConf
                         , weights = weights
-                        , lastForward = Array.empty
+                        , lastLinearSum = Matrix.emptyMat
+                        , lastOutput = Matrix.emptyMat
                         }
 
                 Err e ->
@@ -79,22 +81,22 @@ dense nrInputNeurons nrOutputNeurons activation =
     }
 
 
-forwardLayer : Layer -> Vector -> Result String Layer
-forwardLayer layer inputVec =
+forwardLayer : Layer -> Matrix -> Result String Layer
+forwardLayer layer inputMat =
     let
         forwardMul =
-            Matrix.mulVecWithMat inputVec layer.weights
+            Matrix.mul inputMat layer.weights
     in
     case forwardMul of
-        Ok vec ->
+        Ok mat ->
             let
                 actFun =
                     getActFun layer.layerConf.activation
 
                 throughActivation =
-                    Array.map actFun vec
+                    Matrix.map actFun mat
             in
-            Ok { layer | lastForward = throughActivation }
+            Ok { layer | lastLinearSum = mat, lastOutput = throughActivation }
 
         Err e ->
             Err <| "forwardLayer; " ++ e

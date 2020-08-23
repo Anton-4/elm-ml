@@ -51,6 +51,7 @@ matrixList5 =
 matrixList5Transpose =
     [ [ 0 ], [ 1 ], [ 2 ] ]
 
+
 vecList1 : List Float
 vecList1 =
     [ 0, 0, 0 ]
@@ -192,7 +193,7 @@ multiplyExpect matListA matListB matListC =
             Expect.fail "failed to construct matrix from List"
 
 
-multiplyMatWithVecExpect : List (List Float) -> (List Float) -> (List Float) -> Expectation
+multiplyMatWithVecExpect : List (List Float) -> List Float -> List Float -> Expectation
 multiplyMatWithVecExpect matList vecList vecListProduct =
     let
         matARes =
@@ -205,17 +206,17 @@ multiplyMatWithVecExpect matList vecList vecListProduct =
                     mulMatWithVec
                         mat
                         (Array.fromList vecList)
-
             in
             Expect.equal
                 productVec
-                <| Ok (Array.fromList vecListProduct)
+            <|
+                Ok (Array.fromList vecListProduct)
 
         _ ->
             Expect.fail "failed to construct matrix from List"
 
 
-multiplyVecWithMatExpect : (List Float) -> List (List Float) -> (List Float) -> Expectation
+multiplyVecWithMatExpect : List Float -> List (List Float) -> List Float -> Expectation
 multiplyVecWithMatExpect vecList matList vecListProduct =
     let
         matARes =
@@ -228,12 +229,11 @@ multiplyVecWithMatExpect vecList matList vecListProduct =
                     mulVecWithMat
                         (Array.fromList vecList)
                         mat
-                        
-
             in
             Expect.equal
                 productVec
-                <| Ok (Array.fromList vecListProduct)
+            <|
+                Ok (Array.fromList vecListProduct)
 
         _ ->
             Expect.fail "failed to construct matrix from List"
@@ -249,7 +249,7 @@ multiplication =
         , test "1x3 * 3x1 matrix" <|
             \_ -> multiplyExpect matrixList5 matrixList5Transpose [ [ 5 ] ]
         , test "1x3 vec * 3x3 matrix" <|
-            \_ -> multiplyVecWithMatExpect vecList1 matrixList1 [0, 0, 0]
+            \_ -> multiplyVecWithMatExpect vecList1 matrixList1 [ 0, 0, 0 ]
         , test "1x3 vec * 3x1 matrix" <|
-            \_ -> multiplyVecWithMatExpect vecList1 matrixList1 [0] 
+            \_ -> multiplyVecWithMatExpect vecList1 matrixList5Transpose [ 0 ]
         ]

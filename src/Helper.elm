@@ -1,4 +1,4 @@
-module Helper exposing (arrToString, listToString, nxt, nxtWithArg)
+module Helper exposing (arrToString, combineResList, listToString, nxt, nxtWithArg)
 
 import Array exposing (Array)
 
@@ -32,3 +32,13 @@ listToString lst =
 arrToString : Array Int -> String
 arrToString arr =
     listToString <| Array.toList arr
+
+
+combineResList : List a -> Result String (List a) -> Result String (List a)
+combineResList listA resListB =
+    case resListB of
+        Ok listB ->
+            Ok <| listA ++ listB
+
+        Err e ->
+            Err e

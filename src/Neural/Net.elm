@@ -1,16 +1,16 @@
 module Neural.Net exposing (..)
 
-import Array
 import Array.Extra exposing (map2)
-import Matrix exposing (Matrix, Vector)
+import Helper exposing (nxt)
+import Matrix exposing (Matrix, transpose)
+import Neural.Activations exposing (getActFunDer)
 import Neural.Layers exposing (Layer, LayerConf, forwardLayer, genLayers, layerToStr)
 import Random
 import Result.Extra exposing (combine)
-import Neural.Activations exposing (getActFun)
-import Matrix
 
 
 type alias NeuralNet =
+    --TODO add cost function
     List Layer
 
 
@@ -27,8 +27,8 @@ initNet seed netConf =
     combine layers
 
 
-forward : NeuralNet -> Vector -> Result String (List (Result String Layer))
-forward net inputVec =
+forward : NeuralNet -> Matrix -> Result String (List (Result String Layer))
+forward net inputMat =
     case net of
         [] ->
             Err "forward: Empty neural net given as argument."
@@ -36,7 +36,7 @@ forward net inputVec =
         layer :: layers ->
             let
                 calcedLayerRes =
-                    forwardLayer layer inputVec
+                    forwardLayer layer inputMat
             in
             case calcedLayerRes of
                 Ok calcedLayer ->
@@ -47,7 +47,7 @@ forward net inputVec =
                         _ ->
                             let
                                 otherLayersRes =
-                                    forward layers calcedLayer.lastForward
+                                    forward layers calcedLayer.lastOutput
                             in
                             case otherLayersRes of
                                 Ok otherLayers ->
@@ -60,67 +60,217 @@ forward net inputVec =
                     Err <| "forward: layer " ++ layerToStr layer ++ "; " ++ e
 
 
-backwardHelper : NeuralNet -> Layer -> Vector -> Vector -> Result String (List Layer)
-backwardHelper net lastLayer outputVec labelVec =
+backwardHelper : Layer -> Matrix -> Matrix -> NeuralNet -> Result String (List Layer)
+backwardHelper lastLayer inputsMat labelsMat net =
     let
-        lossVec = map2 (-) labelVec outputVec
-        actFun = getActFun lastLayer.layerConf.activation
-        lossDerMat = Matrix.columnMatFromVec <| Array.map (\elt -> actFun elt) lossVec
-        -- 2*(self.y - self.output) * sigmoid_derivative(self.output)
-        allWeightChangesRes = calcWeightChanges
-                                (List.reverse net)
-                                lossDerMat
-    in
-        case allWeightChangesRes of
-            Ok allWeightChanges ->
-                let
-                    oldWeightsList = List.map (\layer -> layer.weights) net 
-                    layersWithUpdatedWeights = 
-                        List.map2
-                            (\oldWeightsMat weightChangeMat ->
-                                Matrix.plus oldWeightsMat weightChangeMat)
-                            oldWeightsList
-                            allWeightChanges
-                in
-                    Err "TODO"  --Ok <| [layersWithUpdatedWeights] ++ backwardHelper ... 
-            Err e ->
-                Err <| "backwardHelper: " ++ e
+        actFunDer =
+            getActFunDer lastLayer.layerConf.activation
 
-calcWeightChanges : List Layer -> Matrix -> Result String (List Matrix)
-calcWeightChanges revLayers lossDerMat =
+        costDerivativeRes =
+            Matrix.min
+                lastLayer.lastOutput
+                labelsMat
+                |> nxt
+                    (\errDiff ->
+                        Ok
+                            (Matrix.map
+                                (\d -> d * 2)
+                                errDiff
+                            )
+                    )
+
+        lastDeltaRes =
+            costDerivativeRes
+                |> nxt
+                    (\costDerivative ->
+                        Matrix.mul
+                            costDerivative
+                            (Matrix.map
+                                actFunDer
+                                lastLayer.lastLinearSum
+                            )
+                    )
+
+        allWeightChangesRes =
+            lastDeltaRes
+                |> nxt
+                    (\lastDelta ->
+                        calcWeightChanges
+                            inputsMat
+                            lastDelta
+                            Matrix.emptyMat
+                            (List.reverse net)
+                    )
+    in
+    case allWeightChangesRes of
+        Ok allWeightChanges ->
+            let
+                oldWeightsList =
+                    List.map (\layer -> layer.weights) net
+
+                updatedWeightsResList =
+                    List.map2
+                        (\oldWeightsMat weightChangeMat ->
+                            Matrix.plus oldWeightsMat weightChangeMat
+                        )
+                        oldWeightsList
+                        allWeightChanges
+
+                updatedWeightsListRes =
+                    Result.Extra.combine updatedWeightsResList
+            in
+            case updatedWeightsListRes of
+                Ok updatedWeightsList ->
+                    Ok <|
+                        List.map2
+                            (\layer newWeights ->
+                                { layer | weights = newWeights }
+                            )
+                            net
+                            updatedWeightsList
+
+                Err e ->
+                    Err <| "backwardHelper: " ++ e
+
+        Err e ->
+            Err <| "backwardHelper: " ++ e
+
+
+moveResultOut : Result String Matrix -> Result String (List Matrix)
+moveResultOut res =
+    case res of
+        Ok mat ->
+            Ok [ mat ]
+
+        Err e ->
+            Err e
+
+
+calcWeightChanges : Matrix -> Matrix -> Matrix -> List Layer -> Result String (List Matrix)
+calcWeightChanges inputsMat delta nextWeights revLayers =
     case revLayers of
-        [] -> Err "calcWeightChanges: received empty list of layers"
-        layer :: restLayers ->
+        [] ->
+            Err "calcWeightChanges: received empty list of layers"
+
+        firstLayer :: [] ->
             let
                 weightsChangeMatRes =
-                    Matrix.mul
-                        (Matrix.transpose layer.weights)
-                        lossDerMat
+                    if Matrix.isEmpty nextWeights then
+                        -- current layer is last layer
+                        Matrix.mul
+                            delta
+                            (Matrix.transpose inputsMat)
 
+                    else
+                        let
+                            actFunDer =
+                                getActFunDer firstLayer.layerConf.activation
+
+                            deltaWeightsRes =
+                                Matrix.mul
+                                    (Matrix.transpose nextWeights)
+                                    delta
+
+                            newDeltaRes =
+                                deltaWeightsRes
+                                    |> nxt
+                                        (\deltaWeights ->
+                                            Matrix.mul
+                                                deltaWeights
+                                                (Matrix.map
+                                                    actFunDer
+                                                    firstLayer.lastLinearSum
+                                                )
+                                        )
+                        in
+                        newDeltaRes
+                            |> nxt
+                                (\newDelta ->
+                                    Matrix.mul
+                                        newDelta
+                                        (Matrix.transpose inputsMat)
+                                )
             in
-                case weightsChangeMatRes of
-                    Ok weightsChangeMat ->
-                        case restLayers of
-                            [] -> Ok [weightsChangeMat]
-                            _ ->
-                                let
-                                    weightChangesRestRes =
-                                        calcWeightChanges restLayers lossDerMat
-                                in
-                                case weightChangesRestRes of
-                                    Ok weightChangesRest ->
-                                        Ok <| weightChangesRest ++ [weightsChangeMat]
+            moveResultOut weightsChangeMatRes
 
-                                    Err e ->
-                                        Err <| "calcWeightChanges: " ++ e
+        layer :: prevLayer :: restLayers ->
+            let
+                weightsChangeDeltaTupRes =
+                    if Matrix.isEmpty nextWeights then
+                        -- current layer is last layer
+                        let
+                            weightsChangeRes =
+                                Matrix.mul
+                                    delta
+                                    (Matrix.transpose prevLayer.lastOutput)
+                        in
+                        case weightsChangeRes of
+                            Ok weightsChange ->
+                                Ok ( weightsChange, delta )
 
-                    Err e ->
-                        Err <| "calcWeightChanges: " ++ e
+                            Err e ->
+                                Err <| "calcWeightChanges: " ++ e
 
--- # application of the chain rule to find derivative of the lossDer function with respect to weights2 and weights1
--- d_weights2 = np.dot(self.layer1.T, (2*(self.y - self.output) * sigmoid_derivative(self.output)))
--- d_weights1 = np.dot(self.input.T,  (np.dot(2*(self.y - self.output) * sigmoid_derivative(self.output), self.weights2.T) * sigmoid_derivative(self.layer1)))
+                    else
+                        let
+                            actFunDer =
+                                getActFunDer layer.layerConf.activation
 
--- # update the weights with the derivative (slope) of the lossDer function
--- self.weights1 += d_weights1
--- self.weights2 += d_weights2
+                            deltaWeightsRes =
+                                Matrix.mul
+                                    (Matrix.transpose nextWeights)
+                                    delta
+
+                            newDeltaRes =
+                                deltaWeightsRes
+                                    |> nxt
+                                        (\deltaWeights ->
+                                            Matrix.mul
+                                                deltaWeights
+                                                (Matrix.map
+                                                    actFunDer
+                                                    layer.lastLinearSum
+                                                )
+                                        )
+
+                            weightsChangeMatRes =
+                                newDeltaRes
+                                    |> nxt
+                                        (\newDelta ->
+                                            Matrix.mul
+                                                newDelta
+                                                (Matrix.transpose prevLayer.lastOutput)
+                                        )
+                        in
+                        case ( weightsChangeMatRes, newDeltaRes ) of
+                            ( Ok weightsChangeMat, Ok newDelta ) ->
+                                Ok ( weightsChangeMat, newDelta )
+
+                            ( Err eWeightChange, Err eNewDelta ) ->
+                                Err <| "calcWeightChanges: Both NewDelta and weightsChangeMat calculation failed: \n\t - " ++ eWeightChange ++ "\n\t -" ++ eNewDelta
+
+                            ( Err eWeightChange, Ok _ ) ->
+                                Err <| "calcWeightChanges:weightsChangeMat calculation failed (NewDelta succeeded): " ++ eWeightChange
+
+                            ( Ok _, Err eNewDelta ) ->
+                                Err <| "calcWeightChanges: NewDelta calculation failed and weightChangeMat succeeded, this should be impossible: " ++ eNewDelta
+            in
+            case weightsChangeDeltaTupRes of
+                Ok ( weightsChangeMat, newDelta ) ->
+                    let
+                        otherLayersWeightsRes =
+                            calcWeightChanges
+                                inputsMat
+                                newDelta
+                                layer.weights
+                                (prevLayer :: restLayers)
+                    in
+                    case otherLayersWeightsRes of
+                        Ok otherLayersWeights ->
+                            Ok (weightsChangeMat :: otherLayersWeights)
+
+                        Err e ->
+                            Err e
+
+                Err e ->
+                    Err e
