@@ -13,6 +13,15 @@ mean vec =
     sumArr vec / len
 
 
+meanList : List Float -> Float
+meanList lst =
+    let
+        len =
+            toFloat <| List.length lst
+    in
+    sum lst / len
+
+
 squaredMeanDiffsSum : Vector -> Float -> Float
 squaredMeanDiffsSum vec vecMean =
     let

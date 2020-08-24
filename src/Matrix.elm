@@ -9,6 +9,7 @@ import Array.Extra
 import Helper exposing (arrToString, nxt)
 import Maybe.Extra
 import Random exposing (Generator)
+import Result exposing (Result(..))
 
 
 type alias Matrix =
@@ -269,24 +270,33 @@ dotProduct vecA vecB =
 
 mul : Matrix -> Matrix -> Result String Matrix
 mul matA matB =
-    let
-        mulArray =
-            Array.map
-                (\row ->
-                    let
-                        transpB =
-                            transpose matB
+    if matA.nrCols /= matB.nrRows then
+        Err <|
+            "mul: matA must have same number of cols as matB has rows. matA has "
+                ++ String.fromInt matA.nrCols
+                ++ " cols, matB has "
+                ++ String.fromInt matB.nrRows
+                ++ " rows."
 
-                        products =
-                            Array.map
-                                (\col -> dotProduct row col)
-                                transpB.data
-                    in
-                    products
-                )
-                matA.data
-    in
-    fromArray mulArray
+    else
+        let
+            mulArray =
+                Array.map
+                    (\row ->
+                        let
+                            transpB =
+                                transpose matB
+
+                            products =
+                                Array.map
+                                    (\col -> dotProduct row col)
+                                    transpB.data
+                        in
+                        products
+                    )
+                    matA.data
+        in
+        fromArray mulArray
 
 
 mulVecWithMat : Vector -> Matrix -> Result String Vector
@@ -393,7 +403,7 @@ unflatten : Int -> Int -> List Float -> Result String Matrix
 unflatten nrRows nrCols list =
     let
         list2D =
-            unflattenHelper nrRows list
+            unflattenHelper nrCols list
 
         matRes =
             fromList list2D
@@ -468,12 +478,44 @@ dims mat =
 
 min : Matrix -> Matrix -> Result String Matrix
 min matA matB =
-    map2 (-) matA matB
+    let
+        res =
+            map2 (-) matA matB
+    in
+    case res of
+        Ok diff ->
+            Ok diff
+
+        Err e ->
+            Err <| "diff: " ++ e
 
 
 plus : Matrix -> Matrix -> Result String Matrix
 plus matA matB =
-    map2 (+) matA matB
+    let
+        res =
+            map2 (+) matA matB
+    in
+    case res of
+        Ok sum ->
+            Ok sum
+
+        Err e ->
+            Err <| "plus: " ++ e
+
+
+eltwiseMul : Matrix -> Matrix -> Result String Matrix
+eltwiseMul matA matB =
+    let
+        res =
+            map2 (*) matA matB
+    in
+    case res of
+        Ok prod ->
+            Ok prod
+
+        Err e ->
+            Err <| "eltWiseMul: " ++ e
 
 
 get : Int -> Int -> Matrix -> Maybe Float

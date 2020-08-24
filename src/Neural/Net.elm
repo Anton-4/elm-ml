@@ -1,12 +1,15 @@
 module Neural.Net exposing (..)
 
 import Array.Extra exposing (map2)
+import Browser.Navigation exposing (forward)
 import Helper exposing (nxt)
+import List.Extra
 import Matrix exposing (Matrix, transpose)
 import Neural.Activations exposing (getActFunDer)
 import Neural.Layers exposing (Layer, LayerConf, forwardLayer, genLayers, layerToStr)
 import Random
 import Result.Extra exposing (combine)
+import Stats exposing (meanList)
 
 
 type alias NeuralNet =
@@ -27,8 +30,8 @@ initNet seed netConf =
     combine layers
 
 
-forward : NeuralNet -> Matrix -> Result String (List (Result String Layer))
-forward net inputMat =
+forward : Matrix -> NeuralNet -> Result String (List Layer)
+forward inputsMat net =
     case net of
         [] ->
             Err "forward: Empty neural net given as argument."
@@ -36,28 +39,42 @@ forward net inputMat =
         layer :: layers ->
             let
                 calcedLayerRes =
-                    forwardLayer layer inputMat
+                    forwardLayer layer inputsMat
             in
             case calcedLayerRes of
                 Ok calcedLayer ->
                     case layers of
                         [] ->
-                            Ok [ Ok calcedLayer ]
+                            Ok [ calcedLayer ]
 
                         _ ->
                             let
                                 otherLayersRes =
-                                    forward layers calcedLayer.lastOutput
+                                    forward calcedLayer.lastOutput layers
                             in
                             case otherLayersRes of
                                 Ok otherLayers ->
-                                    Ok (Ok calcedLayer :: otherLayers)
+                                    Ok (calcedLayer :: otherLayers)
 
                                 Err e ->
                                     Err e
 
                 Err e ->
                     Err <| "forward: layer " ++ layerToStr layer ++ "; " ++ e
+
+
+backward : Matrix -> Matrix -> NeuralNet -> Result String (List Layer)
+backward inputsMat labelsMat net =
+    let
+        lastLayerMaybe =
+            List.Extra.last net
+    in
+    case lastLayerMaybe of
+        Just lastLayer ->
+            backwardHelper lastLayer inputsMat labelsMat net
+
+        Nothing ->
+            Err "backward: failed to get last layer of net, net was probably empty."
 
 
 backwardHelper : Layer -> Matrix -> Matrix -> NeuralNet -> Result String (List Layer)
@@ -72,6 +89,10 @@ backwardHelper lastLayer inputsMat labelsMat net =
                 labelsMat
                 |> nxt
                     (\errDiff ->
+                        let
+                            _ =
+                                Debug.log "loss" errDiff
+                        in
                         Ok
                             (Matrix.map
                                 (\d -> d * 2)
@@ -83,7 +104,11 @@ backwardHelper lastLayer inputsMat labelsMat net =
             costDerivativeRes
                 |> nxt
                     (\costDerivative ->
-                        Matrix.mul
+                        let
+                            _ =
+                                Debug.log "9" 9
+                        in
+                        Matrix.eltwiseMul
                             costDerivative
                             (Matrix.map
                                 actFunDer
@@ -103,15 +128,18 @@ backwardHelper lastLayer inputsMat labelsMat net =
                     )
     in
     case allWeightChangesRes of
-        Ok allWeightChanges ->
+        Ok allWeightChangesRev ->
             let
+                allWeightChanges =
+                    List.reverse allWeightChangesRev
+
                 oldWeightsList =
                     List.map (\layer -> layer.weights) net
 
                 updatedWeightsResList =
                     List.map2
                         (\oldWeightsMat weightChangeMat ->
-                            Matrix.plus oldWeightsMat weightChangeMat
+                            Matrix.min oldWeightsMat weightChangeMat
                         )
                         oldWeightsList
                         allWeightChanges
@@ -157,6 +185,10 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                 weightsChangeMatRes =
                     if Matrix.isEmpty nextWeights then
                         -- current layer is last layer
+                        let
+                            _ =
+                                Debug.log "8" 8
+                        in
                         Matrix.mul
                             delta
                             (Matrix.transpose inputsMat)
@@ -167,16 +199,30 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 getActFunDer firstLayer.layerConf.activation
 
                             deltaWeightsRes =
+                                let
+                                    _ =
+                                        Debug.log "7" 7
+                                in
                                 Matrix.mul
-                                    (Matrix.transpose nextWeights)
+                                    nextWeights
                                     delta
 
                             newDeltaRes =
                                 deltaWeightsRes
                                     |> nxt
                                         (\deltaWeights ->
-                                            Matrix.mul
-                                                deltaWeights
+                                            let
+                                                _ =
+                                                    Debug.log "6" 6
+
+                                                -- _ = Debug.log "deltaWeights" (deltaWeights)
+                                                -- _ = Debug.log "linSumDer" ((Matrix.map
+                                                --                                 actFunDer
+                                                --                                 firstLayer.lastLinearSum
+                                                --                             ))
+                                            in
+                                            Matrix.eltwiseMul
+                                                (transpose deltaWeights)
                                                 (Matrix.map
                                                     actFunDer
                                                     firstLayer.lastLinearSum
@@ -186,9 +232,19 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                         newDeltaRes
                             |> nxt
                                 (\newDelta ->
+                                    let
+                                        _ =
+                                            Debug.log "5" 5
+
+                                        -- _ = Debug.log "newDelta" (newDelta)
+                                        -- _ = Debug.log "inputsMat transpose" (Matrix.transpose inputsMat)
+                                        -- _ = Debug.log "product" (Matrix.mul
+                                        --                             newDelta
+                                        --                             (Matrix.transpose inputsMat))
+                                    in
                                     Matrix.mul
-                                        newDelta
-                                        (Matrix.transpose inputsMat)
+                                        (transpose newDelta)
+                                        inputsMat
                                 )
             in
             moveResultOut weightsChangeMatRes
@@ -200,12 +256,21 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                         -- current layer is last layer
                         let
                             weightsChangeRes =
+                                let
+                                    _ =
+                                        Debug.log "1" 1
+                                in
                                 Matrix.mul
                                     delta
-                                    (Matrix.transpose prevLayer.lastOutput)
+                                    prevLayer.lastOutput
                         in
                         case weightsChangeRes of
                             Ok weightsChange ->
+                                -- let
+                                --     _ = Debug.log "delta" delta
+                                --     _ = Debug.log "prevLayer.lastOutput" (prevLayer.lastOutput)
+                                --     _ = Debug.log "weightsChange" (weightsChange)
+                                -- in
                                 Ok ( weightsChange, delta )
 
                             Err e ->
@@ -217,6 +282,10 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 getActFunDer layer.layerConf.activation
 
                             deltaWeightsRes =
+                                let
+                                    _ =
+                                        Debug.log "2" 2
+                                in
                                 Matrix.mul
                                     (Matrix.transpose nextWeights)
                                     delta
@@ -225,6 +294,10 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 deltaWeightsRes
                                     |> nxt
                                         (\deltaWeights ->
+                                            let
+                                                _ =
+                                                    Debug.log "3" 3
+                                            in
                                             Matrix.mul
                                                 deltaWeights
                                                 (Matrix.map
@@ -237,6 +310,10 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 newDeltaRes
                                     |> nxt
                                         (\newDelta ->
+                                            let
+                                                _ =
+                                                    Debug.log "4" 4
+                                            in
                                             Matrix.mul
                                                 newDelta
                                                 (Matrix.transpose prevLayer.lastOutput)
@@ -274,3 +351,73 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
 
                 Err e ->
                     Err e
+
+
+train : Matrix -> Matrix -> Int -> NeuralNet -> Result String NeuralNet
+train inputsMat labelsMat epochs net =
+    if epochs == 0 then
+        Ok net
+
+    else
+        let
+            fullPassRes =
+                forward inputsMat net
+                    |> nxt (\fwNet -> backward inputsMat labelsMat fwNet)
+        in
+        case fullPassRes of
+            Ok fullPassNet ->
+                train inputsMat labelsMat (epochs - 1) fullPassNet
+
+            Err e ->
+                Err <| "train: " ++ e
+
+
+predictMultiple : Matrix -> NeuralNet -> Result String Matrix
+predictMultiple inputsMat net =
+    let
+        forwardNNRes =
+            forward inputsMat net
+    in
+    case forwardNNRes of
+        Ok forwardNN ->
+            let
+                lastLayerMaybe =
+                    List.Extra.last forwardNN
+            in
+            case lastLayerMaybe of
+                Just lastLayer ->
+                    Ok lastLayer.lastOutput
+
+                Nothing ->
+                    Err "predictMultiple: failed to get last layer of net, net was probably empty."
+
+        Err e ->
+            Err <| "predictMultiple: " ++ e
+
+
+loss : Matrix -> Matrix -> NeuralNet -> Result String Float
+loss inputsMat labelsMat net =
+    let
+        predictRes =
+            predictMultiple inputsMat net
+    in
+    case predictRes of
+        Ok predictMat ->
+            let
+                lossDiffRes =
+                    Matrix.min
+                        predictMat
+                        labelsMat
+            in
+            case lossDiffRes of
+                Ok lossDiffMat ->
+                    Matrix.map (\l -> l * l) lossDiffMat
+                        |> Matrix.flatten
+                        |> Stats.meanList
+                        |> (\m -> Ok m)
+
+                Err e ->
+                    Err <| "loss: " ++ e
+
+        Err e ->
+            Err e
