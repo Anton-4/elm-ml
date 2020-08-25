@@ -98,8 +98,8 @@ columnMatFromVec vec =
     { data = Array.fromList <| List.map Array.fromList list2D, nrRows = Array.length vec, nrCols = 1 }
 
 
-emptyMat : Matrix
-emptyMat =
+empty : Matrix
+empty =
     { data = Array.fromList [ Array.empty ]
     , nrRows = 1
     , nrCols = 0
@@ -138,20 +138,11 @@ identityMat n =
         dataList |> fromList
 
     else if n == 0 then
-        Ok emptyMat
+        Ok empty
+    
 
     else
         Err <| "identityMatrix n: n should be >= 0, but is " ++ String.fromInt n ++ "."
-
-
-
--- randMatrix : Int -> Int -> Generator Float -> Result String (Generator Matrix)
--- randMatrix nrRows nrCols foatGen =
---     let
---         rows = List.repeat nrRows []
---         mat = List.map (\_ -> )
---     in
---         Random.list nrCols floatGen
 
 
 randMatrix : Int -> Int -> Generator Float -> Generator (Result String Matrix)

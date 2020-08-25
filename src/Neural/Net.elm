@@ -89,10 +89,10 @@ backwardHelper lastLayer inputsMat labelsMat net =
                 labelsMat
                 |> nxt
                     (\errDiff ->
-                        let
-                            _ =
-                                Debug.log "loss" errDiff
-                        in
+                        -- let
+                        --     _ =
+                        --         Debug.log "loss" errDiff
+                        -- in
                         Ok
                             (Matrix.map
                                 (\d -> d * 2)
@@ -104,10 +104,6 @@ backwardHelper lastLayer inputsMat labelsMat net =
             costDerivativeRes
                 |> nxt
                     (\costDerivative ->
-                        let
-                            _ =
-                                Debug.log "9" 9
-                        in
                         Matrix.eltwiseMul
                             costDerivative
                             (Matrix.map
@@ -123,7 +119,7 @@ backwardHelper lastLayer inputsMat labelsMat net =
                         calcWeightChanges
                             inputsMat
                             lastDelta
-                            Matrix.emptyMat
+                            Matrix.empty
                             (List.reverse net)
                     )
     in
@@ -185,10 +181,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                 weightsChangeMatRes =
                     if Matrix.isEmpty nextWeights then
                         -- current layer is last layer
-                        let
-                            _ =
-                                Debug.log "8" 8
-                        in
                         Matrix.mul
                             delta
                             (Matrix.transpose inputsMat)
@@ -199,10 +191,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 getActFunDer firstLayer.layerConf.activation
 
                             deltaWeightsRes =
-                                let
-                                    _ =
-                                        Debug.log "7" 7
-                                in
                                 Matrix.mul
                                     nextWeights
                                     delta
@@ -211,16 +199,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 deltaWeightsRes
                                     |> nxt
                                         (\deltaWeights ->
-                                            let
-                                                _ =
-                                                    Debug.log "6" 6
-
-                                                -- _ = Debug.log "deltaWeights" (deltaWeights)
-                                                -- _ = Debug.log "linSumDer" ((Matrix.map
-                                                --                                 actFunDer
-                                                --                                 firstLayer.lastLinearSum
-                                                --                             ))
-                                            in
                                             Matrix.eltwiseMul
                                                 (transpose deltaWeights)
                                                 (Matrix.map
@@ -232,16 +210,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                         newDeltaRes
                             |> nxt
                                 (\newDelta ->
-                                    let
-                                        _ =
-                                            Debug.log "5" 5
-
-                                        -- _ = Debug.log "newDelta" (newDelta)
-                                        -- _ = Debug.log "inputsMat transpose" (Matrix.transpose inputsMat)
-                                        -- _ = Debug.log "product" (Matrix.mul
-                                        --                             newDelta
-                                        --                             (Matrix.transpose inputsMat))
-                                    in
                                     Matrix.mul
                                         (transpose newDelta)
                                         inputsMat
@@ -256,10 +224,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                         -- current layer is last layer
                         let
                             weightsChangeRes =
-                                let
-                                    _ =
-                                        Debug.log "1" 1
-                                in
                                 Matrix.mul
                                     delta
                                     prevLayer.lastOutput
@@ -282,10 +246,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 getActFunDer layer.layerConf.activation
 
                             deltaWeightsRes =
-                                let
-                                    _ =
-                                        Debug.log "2" 2
-                                in
                                 Matrix.mul
                                     (Matrix.transpose nextWeights)
                                     delta
@@ -294,10 +254,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 deltaWeightsRes
                                     |> nxt
                                         (\deltaWeights ->
-                                            let
-                                                _ =
-                                                    Debug.log "3" 3
-                                            in
                                             Matrix.mul
                                                 deltaWeights
                                                 (Matrix.map
@@ -310,10 +266,6 @@ calcWeightChanges inputsMat delta nextWeights revLayers =
                                 newDeltaRes
                                     |> nxt
                                         (\newDelta ->
-                                            let
-                                                _ =
-                                                    Debug.log "4" 4
-                                            in
                                             Matrix.mul
                                                 newDelta
                                                 (Matrix.transpose prevLayer.lastOutput)

@@ -47,8 +47,8 @@ initLayer layerConf =
                     Ok
                         { layerConf = layerConf
                         , weights = weights
-                        , lastLinearSum = Matrix.emptyMat
-                        , lastOutput = Matrix.emptyMat
+                        , lastLinearSum = Matrix.empty
+                        , lastOutput = Matrix.empty
                         }
 
                 Err e ->
