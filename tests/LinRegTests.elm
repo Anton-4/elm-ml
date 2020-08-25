@@ -10,12 +10,12 @@ import TestHelpers exposing (floatEqual)
 
 vecX1 : Vector
 vecX1 =
-    Array.fromList [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
+    [ 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
 
 
 vecY1 : Vector
 vecY1 =
-    Array.fromList [ 1, 3, 2, 5, 7, 8, 8, 9, 10, 12 ]
+    [ 1, 3, 2, 5, 7, 8, 8, 9, 10, 12 ]
 
 
 twoDimTest : Test

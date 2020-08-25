@@ -1,6 +1,5 @@
 module NeuralTests exposing (denseNetTrain, neuralNetInit)
 
-import Array
 import Expect exposing (Expectation)
 import Helper exposing (nxt)
 import List.Extra exposing (last)

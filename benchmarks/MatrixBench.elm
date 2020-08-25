@@ -1,18 +1,20 @@
 module MatrixBench exposing (main)
 
-import Benchmark exposing (benchmark, describe, Benchmark)
+import Benchmark exposing (Benchmark, benchmark, describe)
 import Benchmark.Runner exposing (BenchmarkProgram, program)
+import Matrix exposing (randMatrix)
 import Random
 import Random.Float exposing (normal)
-import Matrix exposing (randMatrix)
-import Matrix exposing (randMatrix)
 
 
 suite : Benchmark
 suite =
     describe "Matrix Operations"
-        genBenchmarks -- last run: 116/s optimized
+        genBenchmarks
 
+
+
+-- last run: 313/s
 
 
 seed2 : Random.Seed
@@ -30,24 +32,26 @@ genBenchmarks =
     let
         floatGen =
             normal 0 0.5
+
         matARes =
             Random.step (randMatrix 784 30 floatGen) seed2
 
         matBRes =
             Random.step (randMatrix 30 1 floatGen) seed3
-    in  
-        case matARes of
-            (Ok matA, _) ->
-                case matBRes of
-                    (Ok matB, _) ->
-                        [
-                            benchmark "multiply 784x30 30x1" <|
-                            \_ -> Matrix.mul matA matB
-                        ]
-                    _ ->
-                        []
-            _ ->
-                []
+    in
+    case matARes of
+        ( Ok matA, _ ) ->
+            case matBRes of
+                ( Ok matB, _ ) ->
+                    [ benchmark "multiply 784x30 30x1" <|
+                        \_ -> Matrix.mul matA matB
+                    ]
+
+                _ ->
+                    []
+
+        _ ->
+            []
 
 
 main : BenchmarkProgram

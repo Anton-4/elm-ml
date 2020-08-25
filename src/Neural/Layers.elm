@@ -1,7 +1,6 @@
 module Neural.Layers exposing (..)
 
-import Array
-import Matrix exposing (Matrix, Vector, randMatrix)
+import Matrix exposing (Matrix, randMatrix)
 import Neural.Activations exposing (Activation(..), getActFun)
 import Random exposing (Generator)
 import Random.Float exposing (normal)

@@ -1,6 +1,5 @@
 module LinearRegression exposing (..)
 
-import Array
 import Matrix exposing (Vector)
 import Stats exposing (mean, squaredMeanDiffsSum, sum)
 
@@ -28,8 +27,8 @@ fit x y =
                 (\xElt yElt ->
                     (xElt - xMean) * (yElt - yMean)
                 )
-                (Array.toList x)
-                (Array.toList y)
+                x
+                y
 
         ssXY =
             sum squaredMeanDiffsXY

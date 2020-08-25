@@ -9,7 +9,7 @@ import Neural.Activations exposing (getActFunDer)
 import Neural.Layers exposing (Layer, LayerConf, forwardLayer, genLayers, layerToStr)
 import Random
 import Result.Extra exposing (combine)
-import Stats exposing (meanList)
+import Stats exposing (mean)
 
 
 type alias NeuralNet =
@@ -365,7 +365,7 @@ loss inputsMat labelsMat net =
                 Ok lossDiffMat ->
                     Matrix.map (\l -> l * l) lossDiffMat
                         |> Matrix.flatten
-                        |> Stats.meanList
+                        |> Stats.mean
                         |> (\m -> Ok m)
 
                 Err e ->

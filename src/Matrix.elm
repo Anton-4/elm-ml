@@ -5,22 +5,23 @@ module Matrix exposing (..)
 -}
 
 import Array exposing (Array)
-import Array.Extra
-import Helper exposing (arrToString, nxt)
+import Helper exposing (listToString, nxt)
+import List.Extra
+import Maybe exposing (Maybe)
 import Maybe.Extra
 import Random exposing (Generator)
 import Result exposing (Result(..))
 
 
 type alias Matrix =
-    { data : Array (Array Float)
+    { data : List (List Float)
     , nrRows : Int
     , nrCols : Int
     }
 
 
 type alias Vector =
-    Array Float
+    List Float
 
 
 checkListAll : (Int -> Bool) -> List Int -> Bool
@@ -42,26 +43,26 @@ checkArrAll f arr =
     checkListAll f <| Array.toList arr
 
 
-fromArray : Array Vector -> Result String Matrix
-fromArray array =
+fromList : List Vector -> Result String Matrix
+fromList list2D =
     let
         nrRows =
-            Array.length array
+            List.length list2D
 
-        nrColsPerArr =
-            Array.map Array.length array
+        nrColsPerList =
+            List.map List.length list2D
 
-        firstArrLength =
-            Array.get 0 nrColsPerArr
+        firstListLength =
+            List.head nrColsPerList
 
         rowLengths =
-            Array.map (\row -> Array.length row) array
+            List.map (\row -> List.length row) list2D
     in
-    case firstArrLength of
+    case firstListLength of
         Just len ->
-            if checkArrAll (\x -> x == len) rowLengths then
+            if checkListAll (\x -> x == len) rowLengths then
                 Ok
-                    { data = array
+                    { data = list2D
                     , nrRows = nrRows
                     , nrCols = len
                     }
@@ -69,38 +70,37 @@ fromArray array =
             else
                 Err <|
                     "Not all rows have the same number of columns. Found row lengths: ("
-                        ++ arrToString rowLengths
+                        ++ listToString rowLengths
                         ++ ")."
 
         Nothing ->
             Ok
-                { data = array
+                { data = list2D
                 , nrRows = 1
                 , nrCols = 0
                 }
 
 
-fromList : List (List Float) -> Result String Matrix
-fromList list =
-    list
-        |> List.map Array.fromList
-        |> Array.fromList
-        |> fromArray
+fromArray : Array (Array Float) -> Result String Matrix
+fromArray arr =
+    arr
+        |> Array.map Array.toList
+        |> Array.toList
+        |> fromList
 
 
 columnMatFromVec : Vector -> Matrix
 columnMatFromVec vec =
     let
         list2D =
-            Array.toList vec
-                |> List.map (\elt -> [ elt ])
+            List.map (\elt -> [ elt ]) vec
     in
-    { data = Array.fromList <| List.map Array.fromList list2D, nrRows = Array.length vec, nrCols = 1 }
+    { data = list2D, nrRows = List.length vec, nrCols = 1 }
 
 
 empty : Matrix
 empty =
-    { data = Array.fromList [ Array.empty ]
+    { data = [ [] ]
     , nrRows = 1
     , nrCols = 0
     }
@@ -139,7 +139,6 @@ identityMat n =
 
     else if n == 0 then
         Ok empty
-    
 
     else
         Err <| "identityMatrix n: n should be >= 0, but is " ++ String.fromInt n ++ "."
@@ -156,7 +155,7 @@ randMatrix nrRows nrCols floatGen =
 
 getCol : Matrix -> Int -> Result String Vector
 getCol mat colNr =
-    case Array.get colNr mat.data of
+    case List.Extra.getAt colNr mat.data of
         Just arr ->
             Ok arr
 
@@ -184,13 +183,13 @@ updateCol mat colNr newCol =
         updateMatrix =
             \newMatCol ->
                 Ok
-                    { data = Array.set colNr newMatCol mat.data
+                    { data = List.Extra.setAt colNr newMatCol mat.data
                     , nrRows = mat.nrRows
                     , nrCols = mat.nrCols
                     }
 
         colLength =
-            Array.length newCol
+            List.length newCol
     in
     if mat.nrRows == colLength then
         updateMatrix newCol
@@ -206,12 +205,7 @@ updateCol mat colNr newCol =
 
 map : (Float -> Float) -> Matrix -> Matrix
 map fun matrix =
-    { matrix | data = Array.map (\row -> Array.map fun row) matrix.data }
-
-
-to2DList : Matrix -> List (List Float)
-to2DList mat =
-    Array.toList <| Array.map Array.toList mat.data
+    { matrix | data = List.map (\row -> List.map fun row) matrix.data }
 
 
 transpose : Matrix -> Matrix
@@ -243,20 +237,17 @@ transpose matrix =
                             []
 
                 dataLists =
-                    to2DList matrix
+                    matrix.data
 
                 transposedList =
                     zip2D dataLists
-
-                transposedArr =
-                    Array.fromList <| List.map Array.fromList transposedList
             in
-            { data = transposedArr, nrRows = matrix.nrCols, nrCols = matrix.nrRows }
+            { data = transposedList, nrRows = matrix.nrCols, nrCols = matrix.nrRows }
 
 
-dotProduct : Array Float -> Array Float -> Float
+dotProduct : Vector -> Vector -> Float
 dotProduct vecA vecB =
-    Array.foldl (+) 0 <| Array.Extra.map2 (*) vecA vecB
+    List.foldl (+) 0 <| List.map2 (*) vecA vecB
 
 
 mul : Matrix -> Matrix -> Result String Matrix
@@ -271,15 +262,15 @@ mul matA matB =
 
     else
         let
-            mulArray =
-                Array.map
+            mulList =
+                List.map
                     (\row ->
                         let
                             transpB =
                                 transpose matB
 
                             products =
-                                Array.map
+                                List.map
                                     (\col -> dotProduct row col)
                                     transpB.data
                         in
@@ -287,14 +278,14 @@ mul matA matB =
                     )
                     matA.data
         in
-        fromArray mulArray
+        fromList mulList
 
 
 mulVecWithMat : Vector -> Matrix -> Result String Vector
 mulVecWithMat vec mat =
     let
         mat1Dim =
-            fromArray <| Array.fromList [ vec ]
+            fromList [ vec ]
 
         matrixProd =
             mat1Dim
@@ -304,7 +295,7 @@ mulVecWithMat vec mat =
         Ok matProd ->
             let
                 firsRow =
-                    Array.get 0 matProd.data
+                    List.head matProd.data
             in
             case firsRow of
                 Just row ->
@@ -321,7 +312,7 @@ mulMatWithVec : Matrix -> Vector -> Result String Vector
 mulMatWithVec mat vec =
     let
         mat1Dim =
-            fromArray <| Array.fromList [ vec ]
+            fromList [ vec ]
 
         matrixProd =
             mat1Dim
@@ -331,7 +322,7 @@ mulMatWithVec mat vec =
         Ok matProd ->
             let
                 firsRow =
-                    Array.get 0 matProd.data
+                    List.head matProd.data
             in
             case firsRow of
                 Just row ->
@@ -376,8 +367,7 @@ map2 fun matA matB =
 
 flatten : Matrix -> List Float
 flatten mat =
-    to2DList mat
-        |> flattenHelper
+    flattenHelper mat.data
 
 
 flattenHelper : List (List Float) -> List Float
@@ -511,5 +501,5 @@ eltwiseMul matA matB =
 
 get : Int -> Int -> Matrix -> Maybe Float
 get row col mat =
-    Array.get row mat.data
-        |> Maybe.andThen (Array.get col)
+    List.Extra.getAt row mat.data
+        |> Maybe.andThen (List.Extra.getAt col)

@@ -77,38 +77,37 @@ create =
     describe "create"
         [ test "3x3 matrix " <|
             \_ ->
-                fromList matrixList1 |> Expect.equal (Ok { data = toArr matrixList1, nrRows = 3, nrCols = 3 })
+                fromList matrixList1 |> Expect.equal (Ok { data = matrixList1, nrRows = 3, nrCols = 3 })
         , test "3x2 matrix " <|
             \_ ->
-                fromList matrixList2 |> Expect.equal (Ok { data = toArr matrixList2, nrRows = 3, nrCols = 2 })
+                fromList matrixList2 |> Expect.equal (Ok { data = matrixList2, nrRows = 3, nrCols = 2 })
         , test "2x3 matrix " <|
             \_ ->
-                fromList matrixList3 |> Expect.equal (Ok { data = toArr matrixList3, nrRows = 2, nrCols = 3 })
+                fromList matrixList3 |> Expect.equal (Ok { data = matrixList3, nrRows = 2, nrCols = 3 })
         , test "empty matrix " <|
             \_ ->
-                fromList [ [] ] |> Expect.equal (Ok { data = toArr [ [] ], nrRows = 1, nrCols = 0 })
+                fromList [ [] ] |> Expect.equal (Ok { data = [ [] ], nrRows = 1, nrCols = 0 })
         , test "empty identity matrix " <|
             \_ ->
-                identityMat 0 |> Expect.equal (Ok { data = toArr [ [] ], nrRows = 1, nrCols = 0 })
+                identityMat 0 |> Expect.equal (Ok { data = [ [] ], nrRows = 1, nrCols = 0 })
         , test "single row identity matrix " <|
             \_ ->
-                identityMat 1 |> Expect.equal (Ok { data = toArr [ [ 1 ] ], nrRows = 1, nrCols = 1 })
+                identityMat 1 |> Expect.equal (Ok { data = [ [ 1 ] ], nrRows = 1, nrCols = 1 })
         , test "tow 2 row identity matrix " <|
             \_ ->
-                identityMat 2 |> Expect.equal (Ok { data = toArr [ [ 1, 0 ], [ 0, 1 ] ], nrRows = 2, nrCols = 2 })
+                identityMat 2 |> Expect.equal (Ok { data = [ [ 1, 0 ], [ 0, 1 ] ], nrRows = 2, nrCols = 2 })
         , test "5 row identity matrix " <|
             \_ ->
                 identityMat 5
                     |> Expect.equal
                         (Ok
                             { data =
-                                toArr
-                                    [ [ 1, 0, 0, 0, 0 ]
-                                    , [ 0, 1, 0, 0, 0 ]
-                                    , [ 0, 0, 1, 0, 0 ]
-                                    , [ 0, 0, 0, 1, 0 ]
-                                    , [ 0, 0, 0, 0, 1 ]
-                                    ]
+                                [ [ 1, 0, 0, 0, 0 ]
+                                , [ 0, 1, 0, 0, 0 ]
+                                , [ 0, 0, 1, 0, 0 ]
+                                , [ 0, 0, 0, 1, 0 ]
+                                , [ 0, 0, 0, 0, 1 ]
+                                ]
                             , nrRows = 5
                             , nrCols = 5
                             }
@@ -205,12 +204,12 @@ multiplyMatWithVecExpect matList vecList vecListProduct =
                 productVec =
                     mulMatWithVec
                         mat
-                        (Array.fromList vecList)
+                        vecList
             in
             Expect.equal
                 productVec
             <|
-                Ok (Array.fromList vecListProduct)
+                Ok vecListProduct
 
         _ ->
             Expect.fail "failed to construct matrix from List"
@@ -227,13 +226,13 @@ multiplyVecWithMatExpect vecList matList vecListProduct =
             let
                 productVec =
                     mulVecWithMat
-                        (Array.fromList vecList)
+                        vecList
                         mat
             in
             Expect.equal
                 productVec
             <|
-                Ok (Array.fromList vecListProduct)
+                Ok vecListProduct
 
         _ ->
             Expect.fail "failed to construct matrix from List"

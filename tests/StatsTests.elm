@@ -10,22 +10,22 @@ import TestHelpers exposing (floatEqual)
 
 vec1 : Vector
 vec1 =
-    Array.fromList [ 0, 1, 2, 3 ]
+    [ 0, 1, 2, 3 ]
 
 
 vec2 : Vector
 vec2 =
-    Array.fromList [ -3, -2, -1, 0, 1, 2, 3 ]
+    [ -3, -2, -1, 0, 1, 2, 3 ]
 
 
 vec3 : Vector
 vec3 =
-    Array.fromList [ -1, 0, 0.5 ]
+    [ -1, 0, 0.5 ]
 
 
 vec4 : Vector
 vec4 =
-    Array.fromList [ 0 ]
+    [ 0 ]
 
 
 meanTest : Test
