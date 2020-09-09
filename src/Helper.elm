@@ -1,6 +1,33 @@
-module Helper exposing (arrToString, combineResList, listToString, nxt, nxtWithArg)
+module Helper exposing (arrToString, combineResList, listToString, nxt, nxtWithArg, chk, chkM, chkNxt)
 
 import Array exposing (Array)
+
+
+chk : String -> Result String a -> Result String a
+chk errStr res =
+    case res of
+        Ok val ->
+            Ok val
+        Err e ->
+            Err <| errStr ++ ": " ++ e
+
+
+chkNxt : String -> (a -> Result String b) -> Result String a -> Result String b
+chkNxt errStr fun res =
+    case res of
+        Ok val ->
+            fun val
+        Err e ->
+            Err <| errStr ++ ": " ++ e
+
+
+chkM : String -> Maybe a -> Result String a
+chkM errStr maybe =
+    case maybe of
+        Just val ->
+            Ok val
+        Nothing ->
+            Err <| errStr
 
 
 nxt : (a -> Result e b) -> Result e a -> Result e b
@@ -11,6 +38,9 @@ nxt callback result =
 
         Err msg ->
             Err msg
+
+
+-- TODO dict get with result instead of maybe
 
 
 nxtWithArg : (a -> x -> Result e b) -> x -> Result e a -> Result e b

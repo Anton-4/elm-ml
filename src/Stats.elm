@@ -1,6 +1,5 @@
 module Stats exposing (..)
 
-import Array
 import Matrix exposing (Vector)
 
 
@@ -56,3 +55,14 @@ sumArr vec =
 sum : List Float -> Float
 sum lst =
     List.foldl (+) 0 lst
+
+
+entropy : Float -> Float -> Float
+entropy count length =
+    if count /= 0 then
+        let
+            p = count / length
+        in
+            p * logBase 2 p
+    else
+        0.0
