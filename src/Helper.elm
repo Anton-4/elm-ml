@@ -1,6 +1,8 @@
-module Helper exposing (arrToString, combineResList, listToString, nxt, nxtWithArg, chk, chkM, chkNxt)
+module Helper exposing (arrToString, combineResList, listToString, nxt, nxtWithArg, chk, chkM, chkNxt, getRes, maximumBy)
 
 import Array exposing (Array)
+import Dict exposing (Dict)
+import List.Extra as ListX
 
 
 chk : String -> Result String a -> Result String a
@@ -40,7 +42,22 @@ nxt callback result =
             Err msg
 
 
--- TODO dict get with result instead of maybe
+getRes : comparable -> Dict comparable v -> Result String v
+getRes key dict =
+    case Dict.get key dict of
+        Just val ->
+            Ok val
+        Nothing ->
+            Err "Key was not found in dict."
+
+
+maximumBy : (a -> comparable) -> List a -> Result String a
+maximumBy fun lst =
+    case ListX.maximumBy fun lst of
+        Just max ->
+            Ok max
+        Nothing ->
+            Err "failed to get maximum elt from list."
 
 
 nxtWithArg : (a -> x -> Result e b) -> x -> Result e a -> Result e b

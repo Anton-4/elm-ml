@@ -31,8 +31,8 @@ indexOf elt lst =
             Err <| "Could not find element " ++ elt ++ " in list " ++ String.join "," lst
 
 
-indexOfCol : DataFrame -> String -> Result String Int
-indexOfCol df colName =
+indexOfCol : String -> DataFrame -> Result String Int
+indexOfCol colName df =
     indexOf colName df.header
 
 
@@ -40,9 +40,9 @@ getCol : DataFrame -> String -> Result String Vector
 getCol df colName =
     let
         colFun =
-            \colNr -> Matrix.getCol df.values colNr
+            \colNr -> Matrix.getCol colNr df.values 
     in
-    indexOfCol df colName
+    indexOfCol colName df
         |> nxt colFun
 
 
@@ -50,10 +50,10 @@ updateCol : DataFrame -> String -> Vector -> Result String DataFrame
 updateCol df colName newCol =
     let
         colIndexRes =
-            indexOfCol df colName
+            indexOfCol colName df
 
         updateMatrixFun =
-            \colNr -> Matrix.updateCol df.values colNr newCol
+            \colNr -> Matrix.updateCol colNr newCol df.values
 
         insertMatrixIntoDFFun =
             \newMatrix ->
@@ -67,14 +67,14 @@ updateCol df colName newCol =
         |> nxt insertMatrixIntoDFFun
 
 
-transformCol : DataFrame -> String -> (Vector -> Result String Vector) -> Result String DataFrame
-transformCol df colName transFun =
+transformCol : String -> (Vector -> Result String Vector) -> DataFrame -> Result String DataFrame
+transformCol colName transFun df =
     let
         colIndexRes =
-            indexOfCol df colName
+            indexOfCol colName df 
 
         colFun =
-            \colNr -> Matrix.transformCol df.values colNr transFun
+            \colNr -> Matrix.transformCol colNr transFun df.values
 
         matrixFun =
             \updatedMatrix ->

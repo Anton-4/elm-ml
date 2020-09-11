@@ -153,8 +153,8 @@ randMatrix nrRows nrCols floatGen =
     Random.map (\lst -> fromList lst) list2DGen
 
 
-getCol : Matrix -> Int -> Result String Vector
-getCol mat colNr =
+getCol : Int -> Matrix -> Result String Vector
+getCol colNr mat =
     case List.Extra.getAt colNr mat.data of
         Just arr ->
             Ok arr
@@ -163,22 +163,22 @@ getCol mat colNr =
             Err <| "colNr " ++ String.fromInt colNr ++ " was out of bounds for matrix with " ++ String.fromInt mat.nrCols ++ " cols."
 
 
-transformCol : Matrix -> Int -> (Vector -> Result String Vector) -> Result String Matrix
-transformCol mat colNr transFun =
+transformCol : Int -> (Vector -> Result String Vector) -> Matrix -> Result String Matrix
+transformCol colNr transFun mat =
     let
         colRes =
-            getCol mat colNr
+            getCol colNr mat
 
         updateMatrix =
-            \newCol -> updateCol mat colNr newCol
+            \newCol -> updateCol colNr newCol mat
     in
     colRes
         |> nxt transFun
         |> nxt updateMatrix
 
 
-updateCol : Matrix -> Int -> Vector -> Result String Matrix
-updateCol mat colNr newCol =
+updateCol : Int -> Vector -> Matrix -> Result String Matrix
+updateCol colNr newCol mat =
     let
         updateMatrix =
             \newMatCol ->
