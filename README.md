@@ -1,1 +1,3 @@
 # elm-ml
+
+Implemented some Machine Learning algorithms in Elm. No Longer maintained...
